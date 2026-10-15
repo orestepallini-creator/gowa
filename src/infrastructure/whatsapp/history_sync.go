@@ -266,6 +266,9 @@ func processConversationMessages(ctx context.Context, data *waHistorySync.Histor
 				latestTimestamp = timestamp
 			}
 
+			quoted := utils.ExtractQuotedInfo(msg.GetMessage())
+			quoted.Sender = NormalizeQuotedSender(ctx, quoted.Sender, client)
+
 			// Create message object and add to batch
 			message := &domainChatStorage.Message{
 				ID:            messageID,
@@ -283,6 +286,10 @@ func processConversationMessages(ctx context.Context, data *waHistorySync.Histor
 				FileSHA256:    fileSHA256,
 				FileEncSHA256: fileEncSHA256,
 				FileLength:    fileLength,
+
+				QuotedMessageID: quoted.MessageID,
+				QuotedSender:    quoted.Sender,
+				QuotedContent:   quoted.Content,
 			}
 
 			messageBatch = append(messageBatch, message)

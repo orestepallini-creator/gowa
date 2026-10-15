@@ -748,6 +748,47 @@ func ExtractContextInfo(msg *waE2E.Message) *waE2E.ContextInfo {
 	return nil
 }
 
+// MaxQuotedContentLength caps the stored text of a quoted message, in runes.
+const MaxQuotedContentLength = 1000
+
+// QuotedInfo describes the message a reply quotes.
+type QuotedInfo struct {
+	MessageID string
+	Sender    string
+	Content   string
+}
+
+// ExtractQuotedInfo returns the quoted message ID (ContextInfo.StanzaID), the
+// quoted sender (ContextInfo.Participant) and the quoted text (conversation,
+// extended text or media caption, capped at MaxQuotedContentLength runes).
+// It returns a zero value when msg is not a reply.
+func ExtractQuotedInfo(msg *waE2E.Message) QuotedInfo {
+	ci := ExtractContextInfo(UnwrapMessage(msg))
+	if ci == nil || ci.GetStanzaID() == "" {
+		return QuotedInfo{}
+	}
+	return QuotedInfo{
+		MessageID: ci.GetStanzaID(),
+		Sender:    ci.GetParticipant(),
+		Content:   TruncateRunes(ExtractMessageTextFromProto(ci.GetQuotedMessage()), MaxQuotedContentLength),
+	}
+}
+
+// TruncateRunes cuts s to at most max runes without splitting a UTF-8 sequence.
+func TruncateRunes(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	count := 0
+	for i := range s {
+		if count == max {
+			return s[:i]
+		}
+		count++
+	}
+	return s
+}
+
 // ExtractEphemeralExpiration extracts ephemeral expiration from a WhatsApp message
 func ExtractEphemeralExpiration(msg *waE2E.Message) uint32 {
 	if msg == nil {

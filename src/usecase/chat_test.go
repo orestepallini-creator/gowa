@@ -446,6 +446,87 @@ func TestGetChatMessagesExposesReferralMetadata(t *testing.T) {
 	}
 }
 
+func TestGetChatMessagesExposesQuotedReply(t *testing.T) {
+	accountJID := types.NewJID("628999999999", types.DefaultUserServer)
+	deviceID := accountJID.String()
+	chatJID := "628123456789@s.whatsapp.net"
+	now := time.Date(2026, time.October, 14, 8, 0, 0, 0, time.UTC)
+	repo := &chatUsecaseRepoStub{
+		chat: &domainChatStorage.Chat{
+			DeviceID:        deviceID,
+			JID:             chatJID,
+			Name:            "Alice",
+			LastMessageTime: now,
+			CreatedAt:       now,
+			UpdatedAt:       now,
+		},
+		messages: []*domainChatStorage.Message{
+			{
+				ID:              "msg-reply",
+				ChatJID:         chatJID,
+				DeviceID:        deviceID,
+				Sender:          chatJID,
+				Content:         "sí, mañana",
+				Timestamp:       now,
+				CreatedAt:       now,
+				UpdatedAt:       now,
+				QuotedMessageID: "msg-question",
+				QuotedSender:    deviceID,
+				QuotedContent:   "¿te acomoda mañana?",
+			},
+			{
+				ID:        "msg-plain",
+				ChatJID:   chatJID,
+				DeviceID:  deviceID,
+				Sender:    chatJID,
+				Content:   "gracias",
+				Timestamp: now.Add(time.Minute),
+				CreatedAt: now.Add(time.Minute),
+				UpdatedAt: now.Add(time.Minute),
+			},
+		},
+	}
+	service := NewChatService(repo)
+	client := &whatsmeow.Client{Store: &store.Device{ID: &accountJID, PushName: "Primary Account"}}
+	ctx := whatsapp.ContextWithDevice(context.Background(), whatsapp.NewDeviceInstance(deviceID, client, nil))
+
+	response, err := service.GetChatMessages(ctx, domainChat.GetChatMessagesRequest{
+		ChatJID: chatJID,
+		Limit:   50,
+	})
+	if err != nil {
+		t.Fatalf("get chat messages: %v", err)
+	}
+	if len(response.Data) != 2 {
+		t.Fatalf("expected two messages, got %d", len(response.Data))
+	}
+
+	payload, err := json.Marshal(response.Data)
+	if err != nil {
+		t.Fatalf("marshal messages payload: %v", err)
+	}
+	var messages []map[string]any
+	if err := json.Unmarshal(payload, &messages); err != nil {
+		t.Fatalf("unmarshal messages payload: %v", err)
+	}
+	want := map[string]string{
+		"quoted_message_id": "msg-question",
+		"quoted_sender":     deviceID,
+		"quoted_content":    "¿te acomoda mañana?",
+	}
+	for key, value := range want {
+		if messages[0][key] != value {
+			t.Fatalf("message %s = %#v, want %q", key, messages[0][key], value)
+		}
+		if _, ok := messages[1][key]; ok {
+			t.Fatalf("%s must be omitted when empty, got %#v", key, messages[1])
+		}
+	}
+	if messages[0]["content"] != "sí, mañana" || messages[0]["id"] != "msg-reply" {
+		t.Fatalf("existing fields changed: %#v", messages[0])
+	}
+}
+
 type chatUsecaseRepoStub struct {
 	domainChatStorage.IChatStorageRepository
 	chat                  *domainChatStorage.Chat

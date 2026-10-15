@@ -5885,6 +5885,18 @@ components:
           type: string
           example: '{"ctwa_clid":"clid_123","source_app":"whatsapp"}'
           description: JSON string with Meta Ads referral/attribution details when the message originated from a Click-to-WhatsApp ad. Omitted when not applicable (matches Go json omitempty).
+        quoted_message_id:
+          type: string
+          example: '3EB0C767D82B0A1B2C3D'
+          description: ID of the message this one replies to (ContextInfo.StanzaID). Omitted when the message is not a reply.
+        quoted_sender:
+          type: string
+          example: '628123456789@s.whatsapp.net'
+          description: Sender JID of the quoted message (ContextInfo.Participant, @lid resolved to the phone JID when possible). Omitted when unknown or not a reply.
+        quoted_content:
+          type: string
+          example: 'Do you have availability tomorrow?'
+          description: Text of the quoted message (text or media caption), truncated to 1000 characters. Omitted when empty or not a reply.
         filename:
           type: string
           example: 'photo.jpg'

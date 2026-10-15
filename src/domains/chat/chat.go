@@ -68,11 +68,15 @@ type MessageInfo struct {
 	// CallMetadata is JSON when media_type is "call" (incoming call log).
 	CallMetadata     string `json:"call_metadata,omitempty"`
 	ReferralMetadata string `json:"referral_metadata,omitempty"`
-	Filename         string `json:"filename"`
-	URL              string `json:"url"`
-	FileLength       uint64 `json:"file_length"`
-	CreatedAt        string `json:"created_at"`
-	UpdatedAt        string `json:"updated_at"`
+	// Quoted* identify the message this one replies to, when it is a reply.
+	QuotedMessageID string `json:"quoted_message_id,omitempty"`
+	QuotedSender    string `json:"quoted_sender,omitempty"`
+	QuotedContent   string `json:"quoted_content,omitempty"`
+	Filename        string `json:"filename"`
+	URL             string `json:"url"`
+	FileLength      uint64 `json:"file_length"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
 }
 
 type PaginationResponse struct {

@@ -37,3 +37,17 @@ func NormalizeJIDFromLID(ctx context.Context, jid types.JID, client *whatsmeow.C
 	// Fallback to original JID
 	return jid
 }
+
+// NormalizeQuotedSender stores a quoted participant (ContextInfo.Participant)
+// like message senders: @lid resolved to the phone JID when possible, without
+// the device suffix. Unparseable values are kept as received.
+func NormalizeQuotedSender(ctx context.Context, participant string, client *whatsmeow.Client) string {
+	if participant == "" {
+		return ""
+	}
+	jid, err := types.ParseJID(participant)
+	if err != nil {
+		return participant
+	}
+	return NormalizeJIDFromLID(ctx, jid, client).ToNonAD().String()
+}
